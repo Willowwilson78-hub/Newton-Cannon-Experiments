@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/jpeg" href="https://files.catbox.moe/bioia9.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newton's Cannonball Simulation | By WillowWilson78</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0d0b1e 0%, #1a1636 50%, #291f4d 100%);
+      --glass-bg: rgba(30, 24, 54, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+      --accent-purple: #818cf8;
+      --accent-pink: #c084fc;
+      --text-main: #f3f4f6;
+      --text-sub: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--glass-shadow);
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .github-link {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      padding: 10px 15px;
+      z-index: 1000;
+      border-radius: 8px;
+      background: radial-gradient(circle at left, rgba(0, 123, 255, 0.3) 0%, rgba(0, 0, 0, 0) 70%);
+      background-size: 200% 100%;
+      background-position: right bottom;
+      transition: background-position 0.4s ease, transform 0.2s ease, filter 0.4s ease;
+    }
+
+    .github-link img {
+      width: 35px;
+      height: 35px;
+      filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+      border-radius: 50%;
+      margin-bottom: 6px;
+    }
+
+    .github-link span {
+      color: #007bff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+      transition: color 0.4s ease, text-shadow 0.4s ease;
+    }
+
+    .github-link:hover {
+      transform: translateY(-2px);
+      background-position: left bottom;
+      filter: drop-shadow(0 0 8px rgba(0, 123, 255, 0.6));
+    }
+
+    .github-link:hover span {
+      color: #3395ff;
+      text-shadow: 0 0 10px rgba(0, 123, 255, 0.8);
+    }
+
+    .title-group {
+      text-align: center;
+    }
+
+    .title-group h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent-pink), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    .title-group p {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    .canvas-container {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      background: #080612;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .m3-progress-container {
+      width: 100%;
+      height: 4px;
+      background-color: rgba(192, 132, 252, 0.15);
+      border-radius: 999px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .m3-progress-bar-determinate {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-pink), var(--accent-purple));
+      border-radius: 999px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.8);
+    }
+
+    .m3-progress-container.active .m3-progress-bar-determinate {
+      display: none;
+    }
+
+    .m3-bar1,
+    .m3-bar2 {
+      display: none;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, var(--accent-pink), var(--accent-purple));
+      border-radius: 999px;
+      box-shadow: 0 0 8px rgba(192, 132, 252, 0.6);
+    }
+
+    .m3-progress-container.active .m3-bar1,
+    .m3-progress-container.active .m3-bar2 {
+      display: block;
+    }
+
+    .m3-progress-container.active .m3-bar1 {
+      animation: m3_bar1 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+    }
+
+    .m3-progress-container.active .m3-bar2 {
+      animation: m3_bar2 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) 1.15s infinite;
+    }
+
+    @keyframes m3_bar1 {
+      0% { left: -35%; right: 100%; }
+      60% { left: 100%; right: -90%; }
+      100% { left: 100%; right: -90%; }
+    }
+
+    @keyframes m3_bar2 {
+      0% { left: -200%; right: 100%; }
+      60% { left: 107%; right: -8%; }
+      100% { left: 107%; right: -8%; }
+    }
+
+    .controls-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .speed-badge {
+      background: rgba(129, 140, 248, 0.15);
+      color: var(--accent-purple);
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(129, 140, 248, 0.3);
+      font-size: 0.85rem;
+    }
+
+    .squiggly-slider-container {
+      position: relative;
+      width: 100%;
+      height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .squiggly-svg {
+      position: absolute;
+      width: 100%;
+      height: 24px;
+      pointer-events: none;
+    }
+
+    input[type=range].squiggly-input {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 5;
+      margin: 0;
+    }
+
+    .squiggly-thumb {
+      position: absolute;
+      width: 12px;
+      height: 20px;
+      background: var(--accent-pink);
+      border-radius: 999px;
+      box-shadow: 0 0 12px var(--accent-pink);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      top: 50%;
+      z-index: 4;
+      transition: transform 0.1s ease, background 0.2s ease;
+    }
+
+    .squiggly-slider-container:hover .squiggly-thumb {
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-purple), #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <a href="https://github.com/willowwilson78-hub/Anime-Hair-Color-Calculator"
+     target="_blank"
+     rel="noopener noreferrer"
+     class="github-link">
+    <img src="https://files.catbox.moe/cn2cts.png" alt="GitHub Logo">
+    <span>GitHub Repository</span>
+  </a>
+
+  <div style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+    <a href="https://github.com/willowwilson78-hub"
+       target="_blank"
+       rel="noopener noreferrer"
+       style="transition: transform 0.2s;"
+       onmouseover="this.style.transform='scale(1.15)'"
+       onmouseout="this.style.transform='scale(1)'">
+      <img src="https://files.catbox.moe/oa3r54.jpg" alt="My Profile" style="width: 132px; height: 132px; border-radius: 60%; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));">
+    </a>
+    <a href="https://github.com/willowwilson78-hub"
+       target="_blank"
+       rel="noopener noreferrer"
+       style="color: #007bff; font-size: 22px; font-weight: 600; text-decoration: none; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); transition: color 0.2s;"
+       onmouseover="this.style.color='#3395ff'"
+       onmouseout="this.style.color='#007bff'">
+      My Profile❤️‍🔥
+    </a>
+  </div>
+
+  <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; color: #fff; font-size: 14px; font-weight: 500; opacity: 0.8; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); font-family: inherit; pointer-events: none;">
+    Created by WillowWilson78❤️
+  </div>
+
+  <div class="glass-card">
+    <div class="title-group">
+      <h2>Newton's Cannonball</h2>
+      <p>Orbit &amp; Gravity Simulation</p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="simCanvas" width="440" height="440"></canvas>
+    </div>
+
+    <div class="m3-progress-container" id="progressContainer">
+      <div class="m3-progress-bar-determinate" id="progressBar"></div>
+      <div class="m3-bar1"></div>
+      <div class="m3-bar2"></div>
+    </div>
+
+    <div class="controls-wrapper">
+      <div class="slider-header">
+        <span>Initial Speed (v₀)</span>
+        <span class="speed-badge" id="speedValue">3,000 m/s</span>
+      </div>
+
+      <div class="squiggly-slider-container" id="squigglyContainer">
+        <svg class="squiggly-svg" id="squigglySvg">
+          <line id="bgTrack" stroke="rgba(255, 255, 255, 0.2)" stroke-width="4" stroke-linecap="round" />
+          <path id="wavePath" fill="none" stroke="url(#waveGrad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+          <defs>
+            <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#c084fc" />
+              <stop offset="100%" stop-color="#818cf8" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="squiggly-thumb" id="squigglyThumb"></div>
+        <input type="range" class="squiggly-input" id="speedSlider" min="0" max="11500" step="100" value="3000">
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="fireBtn">Fire!</button>
+        <button class="btn btn-secondary" id="resetBtn">Clear Traces</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    const SCALE = 52000;
+    const R_EARTH_REAL = 6371000;
+    const R_EARTH_PX = R_EARTH_REAL / SCALE;
+    const GM = 3.986e14;
+
+    const CANNON_ALTITUDE_PX = 10;
+    const cannonX = centerX;
+    const cannonY = centerY - R_EARTH_PX - CANNON_ALTITUDE_PX;
+
+    let balls = [];
+    const dt = 3.5;
+
+    function drawVectorEarth() {
+      ctx.save();
+
+      const atmosGrad = ctx.createRadialGradient(centerX, centerY, R_EARTH_PX * 0.95, centerX, centerY, R_EARTH_PX * 1.1);
+      atmosGrad.addColorStop(0, 'rgba(56, 189, 248, 0.35)');
+      atmosGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, R_EARTH_PX * 1.1, 0, Math.PI * 2);
+      ctx.fillStyle = atmosGrad;
+      ctx.fill();
+
+      const oceanGrad = ctx.createRadialGradient(centerX - R_EARTH_PX * 0.3, centerY - R_EARTH_PX * 0.3, 10, centerX, centerY, R_EARTH_PX);
+      oceanGrad.addColorStop(0, '#38bdf8');
+      oceanGrad.addColorStop(0.5, '#1d4ed8');
+      oceanGrad.addColorStop(1, '#0f172a');
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, R_EARTH_PX, 0, Math.PI * 2);
+      ctx.fillStyle = oceanGrad;
+      ctx.fill();
+
+      ctx.clip();
+      ctx.fillStyle = '#22c55e';
+      ctx.globalAlpha = 0.85;
+
+      ctx.beginPath();
+      ctx.ellipse(centerX - R_EARTH_PX * 0.4, centerY - R_EARTH_PX * 0.2, R_EARTH_PX * 0.35, R_EARTH_PX * 0.2, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(centerX + R_EARTH_PX * 0.3, centerY - R_EARTH_PX * 0.25, R_EARTH_PX * 0.45, R_EARTH_PX * 0.25, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(centerX + R_EARTH_PX * 0.1, centerY + R_EARTH_PX * 0.2, R_EARTH_PX * 0.25, R_EARTH_PX * 0.3, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(centerX + R_EARTH_PX * 0.5, centerY + R_EARTH_PX * 0.45, R_EARTH_PX * 0.18, R_EARTH_PX * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.ellipse(centerX - R_EARTH_PX * 0.1, centerY - R_EARTH_PX * 0.5, R_EARTH_PX * 0.6, R_EARTH_PX * 0.08, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawVectorCannon() {
+      ctx.save();
+      ctx.translate(cannonX, cannonY);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(-2, 2, 4, CANNON_ALTITUDE_PX);
+      ctx.rotate(0.15);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(-3, -10, 6, 10);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(-4, -12, 8, 3);
+      ctx.restore();
+    }
+
+    class Ball {
+      constructor(v0, color) {
+        this.x = cannonX;
+        this.y = cannonY;
+        this.rx = (this.x - centerX) * SCALE;
+        this.ry = (centerY - this.y) * SCALE;
+        this.vx = v0;
+        this.vy = 0;
+        this.path = [{ x: this.x, y: this.y }];
+        this.crashed = false;
+        this.color = color;
+      }
+
+      update() {
+        if (this.crashed) return;
+
+        for (let step = 0; step < 10; step++) {
+          const r = Math.sqrt(this.rx * this.rx + this.ry * this.ry);
+          if (r <= R_EARTH_REAL) {
+            this.crashed = true;
+            break;
+          }
+          const ax = -GM * this.rx / Math.pow(r, 3);
+          const ay = -GM * this.ry / Math.pow(r, 3);
+          this.vx += ax * dt;
+          this.vy += ay * dt;
+          this.rx += this.vx * dt;
+          this.ry += this.vy * dt;
+        }
+
+        this.x = centerX + this.rx / SCALE;
+        this.y = centerY - this.ry / SCALE;
+
+        this.path.push({ x: this.x, y: this.y });
+        if (this.path.length > 3500) this.path.shift();
+      }
+
+      draw() {
+        ctx.save();
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 1.8;
+        for (let i = 0; i < this.path.length; i++) {
+          if (i === 0) ctx.moveTo(this.path[i].x, this.path[i].y);
+          else ctx.lineTo(this.path[i].x, this.path[i].y);
+        }
+        ctx.stroke();
+
+        if (!this.crashed) {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#f43f5e';
+          ctx.shadowColor = '#f43f5e';
+          ctx.shadowBlur = 8;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    const slider = document.getElementById('speedSlider');
+    const speedVal = document.getElementById('speedValue');
+    const wavePath = document.getElementById('wavePath');
+    const bgTrack = document.getElementById('bgTrack');
+    const squigglyThumb = document.getElementById('squigglyThumb');
+    const container = document.getElementById('squigglyContainer');
+
+    let wavePhase = 0;
+
+    function updateSquigglySlider() {
+      const width = container.clientWidth || 440;
+      const height = 24;
+      const centerY = height / 2;
+
+      const min = parseFloat(slider.min);
+      const max = parseFloat(slider.max);
+      const val = parseFloat(slider.value);
+      const pct = (val - min) / (max - min);
+      const activeWidth = pct * width;
+
+      bgTrack.setAttribute('x1', activeWidth);
+      bgTrack.setAttribute('y1', centerY);
+      bgTrack.setAttribute('x2', width);
+      bgTrack.setAttribute('y2', centerY);
+
+      squigglyThumb.style.left = `${activeWidth}px`;
+
+      let d = `M 0 ${centerY}`;
+      const wavelength = 18;
+      const amplitude = 3.5;
+
+      for (let x = 0; x <= activeWidth; x += 2) {
+        const y = centerY + Math.sin((x / wavelength) * Math.PI * 2 + wavePhase) * amplitude;
+        d += ` L ${x} ${y}`;
+      }
+
+      wavePath.setAttribute('d', d);
+    }
+
+    function animateWave() {
+      wavePhase -= 0.08;
+      updateSquigglySlider();
+      requestAnimationFrame(animateWave);
+    }
+
+    requestAnimationFrame(animateWave);
+
+    slider.addEventListener('input', () => {
+      speedVal.textContent = Number(slider.value).toLocaleString() + ' m/s';
+    });
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawVectorEarth();
+
+      const hasActiveBall = balls.some(b => !b.crashed);
+      if (hasActiveBall) {
+        progressContainer.classList.add('active');
+      } else {
+        progressContainer.classList.remove('active');
+        progressBar.style.width = balls.length > 0 ? '100%' : '0%';
+      }
+
+      balls.forEach(ball => {
+        ball.update();
+        ball.draw();
+      });
+
+      drawVectorCannon();
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+
+    const colors = ['#c084fc', '#34d399', '#fbbf24', '#38bdf8', '#f43f5e'];
+
+    document.getElementById('fireBtn').addEventListener('click', () => {
+      const v0 = parseFloat(slider.value);
+      const color = colors[balls.length % colors.length];
+      balls.push(new Ball(v0, color));
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      balls = [];
+      progressContainer.classList.remove('active');
+      progressBar.style.width = '0%';
+    });
+  </script>
+</body>
+</html>
