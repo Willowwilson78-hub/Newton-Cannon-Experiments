@@ -6,4 +6,4 @@
     width="100%"
   />
 </a>
-A lightweight, simple, real-time web simulation of Newton's Cannonball to visualize orbital gravity and escape velocity. Built with HTML5 Canvas & Material 3. For a better experience, open Desktop Site on mobile. Just for fun or learning physics
+A lightweight, simple, real-time web simulation of Newton's Cannonball to visualize orbital gravity and escape velocity. Built with HTML5 Canvas & Material 3. For a better experience, use PC or Laptop. Just for fun or learning physics
