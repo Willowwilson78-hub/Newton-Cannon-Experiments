@@ -1,5 +1,5 @@
 # Newton-Cannon-Experiments
-<a href="https://willowwilson78-hub.github.io/Anime-Hair-Palette-Calculator/">
+<a href="https://willowwilson78-hub.github.io/Newton-Cannon-Experiments/">
   <img
     src="https://github.com/user-attachments/assets/6bad8a3f-15dc-4a49-b551-9c677707860e"
     alt="Demo"
