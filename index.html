@@ -476,6 +476,8 @@
         this.path = [{ x: this.x, y: this.y }];
         this.crashed = false;
         this.color = color;
+        this.impactX = null;
+        this.impactY = null;
       }
 
       update() {
@@ -483,36 +485,57 @@
 
         for (let step = 0; step < 10; step++) {
           const r = Math.sqrt(this.rx * this.rx + this.ry * this.ry);
+
           if (r <= R_EARTH_REAL) {
+            const impactScale = R_EARTH_REAL / r;
+            const impactRx = this.rx * impactScale;
+            const impactRy = this.ry * impactScale;
+
+            this.impactX = centerX + impactRx / SCALE;
+            this.impactY = centerY - impactRy / SCALE;
+            this.x = this.impactX;
+            this.y = this.impactY;
             this.crashed = true;
             break;
           }
+
           const ax = -GM * this.rx / Math.pow(r, 3);
           const ay = -GM * this.ry / Math.pow(r, 3);
+
           this.vx += ax * dt;
           this.vy += ay * dt;
           this.rx += this.vx * dt;
           this.ry += this.vy * dt;
         }
 
-        this.x = centerX + this.rx / SCALE;
-        this.y = centerY - this.ry / SCALE;
+        if (!this.crashed) {
+          this.x = centerX + this.rx / SCALE;
+          this.y = centerY - this.ry / SCALE;
+          this.path.push({ x: this.x, y: this.y });
 
-        this.path.push({ x: this.x, y: this.y });
-        if (this.path.length > 3500) this.path.shift();
+          if (this.path.length > 3500) {
+            this.path.shift();
+          }
+        }
       }
 
       draw() {
         ctx.save();
+
         ctx.shadowColor = this.color;
         ctx.shadowBlur = 5;
         ctx.beginPath();
         ctx.strokeStyle = this.color;
         ctx.lineWidth = 1.8;
+
         for (let i = 0; i < this.path.length; i++) {
-          if (i === 0) ctx.moveTo(this.path[i].x, this.path[i].y);
-          else ctx.lineTo(this.path[i].x, this.path[i].y);
+          if (i === 0) {
+            ctx.moveTo(this.path[i].x, this.path[i].y);
+          } else {
+            ctx.lineTo(this.path[i].x, this.path[i].y);
+          }
         }
+
         ctx.stroke();
 
         if (!this.crashed) {
@@ -523,6 +546,22 @@
           ctx.shadowBlur = 8;
           ctx.fill();
         }
+
+        if (this.crashed && this.impactX !== null && this.impactY !== null) {
+          ctx.beginPath();
+          ctx.arc(this.impactX, this.impactY, 5.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#ef4444';
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 10;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(this.impactX, this.impactY, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowBlur = 0;
+          ctx.fill();
+        }
+
         ctx.restore();
       }
     }
@@ -583,6 +622,7 @@
       drawVectorEarth();
 
       const hasActiveBall = balls.some(b => !b.crashed);
+
       if (hasActiveBall) {
         progressContainer.classList.add('active');
       } else {
